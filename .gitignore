@@ -1,0 +1,23 @@
+# Byte-compiled / cache
+__pycache__/
+**/__pycache__/
+
+# Virtual environments
+.venv/
+.venve/
+
+# Editor settings
+.vscode/
+
+# Archives and spreadsheet files
+*.zip
+*.xls
+*.xlsx
+*.xslx
+*.csv
+*.csve
+*.~*
+
+# Ignore everything inside outputs
+outputs/**/*
+outputs/

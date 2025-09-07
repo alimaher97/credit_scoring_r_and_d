@@ -1,0 +1,21 @@
+CUSTOMER_BUCKET:
+customer_bucket
+CURRENT                      22616  g
+SETTLED                       9159  g
+SETTLED-PAIDOFF               6812  g
+BUCKET-7                      4039  b
+BUCKET-1                      3282  g
+BUCKET-2                      1597  g
+CANCELLED                     1458  r
+BUCKET-3                      1033  b
+BUCKET-4                       696  b
+BUCKET-5                       530  b
+BUCKET-6                       379  b
+PARTIAL-SETTLE-CHARGE-OFF      152  b
+SETTLE-CHARGE-OFF              119  b
+CANCELLED-PARTIAL-REFUND        30  r
+SETTLE-RESCHEDULED               6  b
+WRITEOFF                         1  b
+Name: count, dtype: int64
+Unique values: 16
+g for good, b for bad, r for remove
