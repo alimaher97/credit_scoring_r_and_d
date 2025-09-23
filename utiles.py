@@ -19,6 +19,8 @@ from typing import Iterable, List, Optional, Sequence, Tuple, Dict, Any
 import math
 import numpy as np
 import pandas as pd
+import pickle
+from pathlib import Path
 
 from scipy import stats
 from sklearn.tree import DecisionTreeClassifier
@@ -351,4 +353,127 @@ __all__ = [
     "pairwise_bad_rate_ztests",
     "compute_cluster_profiles",
     "build_readable_rules",
+    # inference helpers
+    "load_bands_artifacts",
+    "assign_risk_band_to_customer",
 ]
+
+
+# -----------------------------
+# Inference helpers (LogReg bands)
+# -----------------------------
+def load_bands_artifacts(artifacts_dir: "str | Path") -> Tuple[Any, OrdinalEncoder, np.ndarray]:
+    """Load Logistic Regression model, OrdinalEncoder, and band edges.
+
+    Expects the following files inside artifacts_dir:
+    - model_logreg.pkl
+    - encoder_ordinal.pkl
+    - band_edges.txt
+
+    Returns (model, encoder, edges).
+    """
+    p = Path(artifacts_dir)
+    model_path = p / "model_logreg.pkl"
+    enc_path = p / "encoder_ordinal.pkl"
+    edges_path = p / "band_edges.txt"
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"Missing model file: {model_path}")
+    if not enc_path.exists():
+        raise FileNotFoundError(f"Missing encoder file: {enc_path}")
+    if not edges_path.exists():
+        raise FileNotFoundError(f"Missing band edges file: {edges_path}")
+
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    with open(enc_path, "rb") as f:
+        encoder: OrdinalEncoder = pickle.load(f)
+
+    edges = np.loadtxt(edges_path, dtype=float)
+    edges = np.atleast_1d(edges)
+    return model, encoder, edges
+
+
+def assign_risk_band_to_customer(
+    customer: Dict[str, Any] | pd.Series | pd.DataFrame,
+    numeric_cols: Sequence[str],
+    categorical_cols: Sequence[str],
+    *,
+    artifacts_dir: Optional["str | Path"] = None,
+    model: Optional[Any] = None,
+    encoder: Optional[OrdinalEncoder] = None,
+    edges: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
+    """Assign a new customer to a risk band using saved artifacts.
+
+    Provide either `artifacts_dir` (to load model/encoder/edges) or pass
+    `model`, `encoder`, and `edges` directly.
+
+    Inputs:
+    - customer: dict/Series/DataFrame with at least the feature columns
+      in numeric_cols + categorical_cols. If DataFrame is provided, the first row is used.
+    - numeric_cols: order of numeric columns used in training
+    - categorical_cols: order of categorical columns used in training
+
+    Returns a dict with keys: 'pd_score' (float), 'risk_band' (int, 1..K), 'edges' (np.ndarray).
+    """
+    if artifacts_dir is not None:
+        model, encoder, edges = load_bands_artifacts(artifacts_dir)
+    if model is None or encoder is None or edges is None:
+        raise ValueError("Must provide artifacts_dir or model+encoder+edges.")
+
+    # Normalize customer input to a dict of values
+    if isinstance(customer, pd.DataFrame):
+        if customer.empty:
+            raise ValueError("Customer DataFrame is empty.")
+        row = customer.iloc[0]
+        cust = row.to_dict()
+    elif isinstance(customer, pd.Series):
+        cust = customer.to_dict()
+    elif isinstance(customer, dict):
+        cust = customer
+    else:
+        raise TypeError("customer must be dict, Series, or DataFrame")
+
+    # Validate required fields
+    required = list(numeric_cols) + list(categorical_cols)
+    missing = [c for c in required if c not in cust]
+    if missing:
+        raise KeyError(f"Missing required feature(s) in customer: {missing}")
+
+    # Build single-row feature matrix: [numeric ... , encoded categorical ...]
+    X_num = np.array([[float(cust[col]) for col in numeric_cols]], dtype=float)
+    # Encoder expects a DataFrame with categorical columns
+    X_cat = encoder.transform(pd.DataFrame([{col: cust[col] for col in categorical_cols}]))
+    X = np.hstack([X_num, X_cat])
+
+    # Predict PD score
+    if hasattr(model, "predict_proba"):
+        pd_score = float(model.predict_proba(X)[:, 1][0])
+    else:
+        # Fallback: decision_function -> map via sigmoid
+        if hasattr(model, "decision_function"):
+            z = float(model.decision_function(X)[0])
+            pd_score = 1.0 / (1.0 + math.exp(-z))
+        else:
+            raise AttributeError("Model does not support predict_proba or decision_function.")
+
+    # Assign to band using [left, right) bins; impute to nearest if outside
+    K = int(len(edges) - 1)
+    if K <= 0:
+        band_code = 0
+    else:
+        if pd_score < edges[0]:
+            band_code = 0
+        elif pd_score >= edges[-1]:
+            band_code = K - 1
+        else:
+            band_code = int(np.searchsorted(edges, pd_score, side="right") - 1)
+            band_code = min(max(band_code, 0), K - 1)
+
+    result = {
+        "pd_score": pd_score,
+        "risk_band": int(band_code + 1),  # 1..K
+        "edges": edges,
+    }
+    return result
