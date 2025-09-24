@@ -1,0 +1,7 @@
+1- add logger class inside preprocess.py
+
+2- move summary functions to a different class to avoid breaking SRP
+
+3- parametrize hardcoded keys in dataframe using general dataclass object
+
+4- add parameter for choosing banked or unbanked limit_source during filteration
