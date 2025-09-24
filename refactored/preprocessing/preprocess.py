@@ -17,20 +17,20 @@ class CreditDatasetConfig:
     gtz_cols: list
 
 class CreditDataPreprocessor:
-    def __init__(self, data, config: CreditDatasetConfig):
+    def __init__(self, data, limit_source):
         self.df_backup = data
         self.df = data.copy()
         self.documentation = {}
-        self.config = config
+        self.limit_source = limit_source
 
-    def __filter_categorical(self):
+    def __filter_categorical(self, limit_source):
         """
         Removes rows from the DataFrame based on specified categorical values.
         """
         if 'filtering_steps' not in self.documentation:
             self.documentation['filtering_steps'] = []
         # Filter for UnBanked customers only
-        self.df = self.df[self.df['limit_source'] == 'UnBanked'].copy()
+        self.df = self.df[self.df['limit_source'] == limit_source].copy()
         print(f"Original dataset shape: {self.df_backup.shape}")
         print(f"Filtered dataset shape (UnBanked only): {self.df.shape}")
         print(f"\nUnique values in limit_source (original):")
@@ -87,7 +87,7 @@ class CreditDataPreprocessor:
             print(f"\n2. Fixing {invalid_ages_before} invalid ages...")
             self.df['age'] = self.df['age'].clip(lower=18, upper=100)
             print(f"Ages capped to range [18, 100]")
-        self.documentation['filtering_steps'].append(f"Handled invalid ages - Ages capped to range [{self.config.lowest_age}, {self.config.highest_age}]")
+        self.documentation['filtering_steps'].append(f"Handled invalid ages - Ages capped to range [18, 100]")
     def __handle_extreme_income_delta(self):
         """
         Removes rows with extreme income delta percentages (less than min_income_delta_percentage or greater than max_income_delta_percentage).
@@ -99,7 +99,7 @@ class CreditDataPreprocessor:
         if extreme_income_before > 0:
             print(f"\n3. Fixing {extreme_income_before} extreme income delta percentages...")
             self.df['income_delta_percentage'] = self.df['income_delta_percentage'].clip(lower=-100, upper=500)
-        self.documentation['filtering_steps'].append(f"Handled extreme income delta percentages - Capped to range [{self.config.min_income_delta_percentage}, {self.config.max_income_delta_percentage}]")
+        self.documentation['filtering_steps'].append(f"Handled extreme income delta percentages - Capped to range [-100, 500]")
     def __handle_due_principal_vs_credit_limit(self):
         """
         Caps due_principal to credit_limit if due_principal exceeds credit_limit.
@@ -242,7 +242,7 @@ class CreditDataPreprocessor:
         
     def preprocess(self):
         self.__remove_null_values_rows()
-        self.__filter_categorical()
+        self.__filter_categorical(limit_source=self.limit_source)
         self.__remove_duplicates()
         self.__handle_invalid_ages()
         self.__handle_extreme_income_delta()
