@@ -1,0 +1,59 @@
+{
+  "filtering_steps": [
+    "Removed rows with null or zero credit_limit and null customer_bucket - New shape: (76053, 24)",
+    "Filtered for UnBanked customers and removed special programmes and ranks 3 & 4 - New shape: (50421, 24)",
+    "Removed duplicate rows - New shape: (50421, 24)",
+    "Handled invalid ages - Ages capped to range [18, 100]",
+    "Handled extreme income delta percentages - Capped to range [-100, 500]",
+    "Handled due_principal vs credit_limit - Capped due_principal to credit_limit where necessary",
+    "Imputed missing categorical values with 'Unknown'",
+    "Imputed missing numerical values with median",
+    "Removed outliers from specified numerical columns using 3 standard deviations rule"
+  ],
+  "cleaning_summary": [
+    "Final dataset shape: (50091, 8)\n",
+    "Records removed during cleaning: 377025\n",
+    "Data quality improvement completed!\n"
+  ],
+  "target_definition": {
+    "good_customers_buckets": [
+      "CURRENT",
+      "SETTLED",
+      "CANCELLED",
+      "CANCELLED-PARTIAL-REFUND",
+      "SETTLE-RESCHEDULED",
+      "BUCKET-1",
+      "BUCKET-2"
+    ],
+    "bad_customers_buckets": "All other customer_bucket values",
+    "target_encoding": "0 = Good customer, 1 = Bad customer"
+  },
+  "features_description": {
+    "customer_id": "Unique customer identifier",
+    "age": "Customer age (capped between 18-100)",
+    "marital_status": "Customer marital status",
+    "income_delta_percentage": "Income change percentage (capped between -100% to 500%)",
+    "address_category": "Address quality category (A-E)",
+    "jobtitle_category": "Job title quality category (A-E)",
+    "gender": "Customer gender (M/F)",
+    "target": "Binary target variable (0=Good, 1=Bad)"
+  },
+  "dataset_info": {
+    "original_shape": [
+      427116,
+      24
+    ],
+    "final_shape": [
+      50091,
+      8
+    ],
+    "records_removed": 377025,
+    "unique_customers": 42100,
+    "target_distribution": {
+      "good_customers": 43185,
+      "bad_customers": 6906,
+      "good_rate_percent": 86.21,
+      "bad_rate_percent": 13.79
+    }
+  }
+}

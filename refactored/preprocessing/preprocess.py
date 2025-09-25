@@ -212,8 +212,7 @@ class CreditDataPreprocessor:
         if 'dataset_info' not in self.documentation:
             self.documentation['dataset_info'] = None
         self.documentation['target_definition'] = {
-        "good_customers_buckets": ['CURRENT', 'SETTLED', 'CANCELLED', 'CANCELLED-PARTIAL-REFUND', 
-                                  'SETTLE-RESCHEDULED', 'BUCKET-1', 'BUCKET-2'],
+        "good_customers_buckets": ['CURRENT', 'SETTLED', 'SETTLED-PAIDOFF', 'BUCKET-1', 'BUCKET-2'],
         "bad_customers_buckets": "All other customer_bucket values",
         "target_encoding": "0 = Good customer, 1 = Bad customer"
     }
