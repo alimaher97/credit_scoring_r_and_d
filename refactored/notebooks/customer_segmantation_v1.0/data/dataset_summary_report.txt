@@ -1,0 +1,33 @@
+
+UnBanked CUSTOMER SEGMENTATION DATASET - FINAL REPORT
+=====================================================
+
+DATASET OVERVIEW:
+- Original records: 427,116
+- Final records: 50,091
+- Records removed: 377,025 (88.3%)
+- Unique customers: 42,100
+- Features: 6 (excluding customer_id and target)
+
+TARGET DISTRIBUTION:
+- Good customers: 43,185 (86.2%)
+- Bad customers: 6,906 (13.8%)
+
+FILTERING APPLIED:
+1. UnBanked customers only
+2. No special programs
+3. Rank 1-2 only (removed 3-4)
+4. Valid credit limits (>0)
+5. Non-null customer buckets
+6. Data quality improvements
+
+TARGET DEFINITION:
+- Good: CURRENT, SETTLED, CANCELLED, CANCELLED-PARTIAL-REFUND, SETTLE-RESCHEDULED, BUCKET-1, BUCKET-2
+- Bad: All other buckets (BUCKET-3 through BUCKET-7, charge-offs, writeoffs, etc.)
+
+FILES CREATED:
+1. UnBanked_customer_segmentation_final.csv - Main dataset
+2. UnBanked_dataset_documentation.json - Detailed documentation
+3. dataset_summary_report.txt - This summary
+
+Dataset is ready for customer segmentation analysis and modeling.
